@@ -1,15 +1,20 @@
-{"version": "1.1.0",
- "packagesDir": ".lake/packages",
- "packages":
- [{"url": "https://github.com/leanprover-community/batteries",
-   "type": "git",
-   "subDir": null,
-   "scope": "",
-   "rev": "af731107d531b39cd7278c73f91c573f40340612",
-   "name": "batteries",
-   "manifestFile": "lake-manifest.json",
-   "inputRev": "main",
-   "inherited": false,
-   "configFile": "lakefile.toml"}],
- "name": "«spamegg1-thm-prov-lean4»",
- "lakeDir": ".lake"}
+{
+  "version": "1.1.0",
+  "packagesDir": ".lake/packages",
+  "packages": [
+    {
+      "url": "https://github.com/leanprover-community/batteries",
+      "type": "git",
+      "subDir": null,
+      "scope": "",
+      "rev": "af731107d531b39cd7278c73f91c573f40340612",
+      "name": "batteries",
+      "manifestFile": "lake-manifest.json",
+      "inputRev": "main",
+      "inherited": false,
+      "configFile": "lakefile.toml"
+    }
+  ],
+  "name": "«spamegg1-thm-prov-lean4»",
+  "lakeDir": ".lake"
+}
