@@ -10,3 +10,5 @@ lean_lib «Spamegg1ThmProvLean4» where
 @[default_target]
 lean_exe "spamegg1-thm-prov-lean4" where
   root := `Main
+
+require batteries from git "https://github.com/leanprover-community/batteries" @ "main"
