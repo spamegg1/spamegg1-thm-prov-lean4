@@ -1,3 +1,5 @@
+namespace OneWayToDefineProofs
+
 def Implies (p q : Prop) : Prop := p → q
 #check And     -- Prop → Prop → Prop
 #check Or      -- Prop → Prop → Prop
@@ -19,6 +21,9 @@ axiom And_comm (p q : Prop) : Proof (Implies (And p q) (And q p))
 axiom modus_ponens : (p q : Prop) → Proof (Implies p q) → Proof p → Proof q
 axiom implies_intro : (p q : Prop) → (Proof p → Proof q) → Proof (Implies p q)
 
+end OneWayToDefineProofs
+
+variable (p q r s : Prop)
 variable {p : Prop}
 variable {q : Prop}
 theorem t1 : p → q → p := fun hp : p => fun _ : q => show p from hp -- just hp also works
@@ -167,39 +172,116 @@ example (p q : Prop) : ¬(p ∧ ¬q) → (p → q) :=
       (fun hq : q => hq)
       (fun hnq : ¬q => absurd (And.intro hp hnq) h)
 
+-- EXERCISES
 -- Prove the following identities, replacing the "sorry" placeholders with actual proofs.
 -- commutativity of ∧ and ∨
-example : p ∧ q ↔ q ∧ p := sorry
-example : p ∨ q ↔ q ∨ p := sorry
+theorem swap_and (h : x ∧ y) : y ∧ x := And.intro h.right h.left
+example : p ∧ q ↔ q ∧ p := Iff.intro swap_and swap_and
+
+theorem swap_or (h : x ∨ y) : y ∨ x := Or.elim h Or.inr Or.inl
+example : p ∨ q ↔ q ∨ p := Iff.intro swap_or swap_or
 
 -- associativity of ∧ and ∨
-example : (p ∧ q) ∧ r ↔ p ∧ (q ∧ r) := sorry
-example : (p ∨ q) ∨ r ↔ p ∨ (q ∨ r) := sorry
+example : (p ∧ q) ∧ r ↔ p ∧ (q ∧ r) :=
+  have forward : (p ∧ q) ∧ r → p ∧ (q ∧ r) := fun h =>
+    have pq : p ∧ q := h.left
+    And.intro pq.left (And.intro pq.right h.right)
+  have backward : p ∧ (q ∧ r) → (p ∧ q) ∧ r := fun h =>
+    have qr : q ∧ r := h.right
+    And.intro (And.intro h.left qr.left) qr.right
+  Iff.intro forward backward
+
+example : (p ∨ q) ∨ r ↔ p ∨ (q ∨ r) :=
+  have forward : (p ∨ q) ∨ r → p ∨ (q ∨ r) := fun h =>
+    have c1 : p ∨ q → p ∨ (q ∨ r) := fun h1 => h1.elim Or.inl (Or.inr ∘ Or.inl)
+    have c2 :     r → p ∨ (q ∨ r) := Or.inr ∘ Or.inr
+    h.elim c1 c2
+  have backward : p ∨ (q ∨ r) → (p ∨ q) ∨ r := fun h =>
+    have c1 :     p → (p ∨ q) ∨ r := Or.inl ∘ Or.inl
+    have c2 : q ∨ r → (p ∨ q) ∨ r := fun h2 => h2.elim (Or.inl ∘ Or.inr) Or.inr
+    h.elim c1 c2
+  Iff.intro forward backward
 
 -- distributivity
-example : p ∧ (q ∨ r) ↔ (p ∧ q) ∨ (p ∧ r) := sorry
-example : p ∨ (q ∧ r) ↔ (p ∨ q) ∧ (p ∨ r) := sorry
+example : p ∧ (q ∨ r) ↔ (p ∧ q) ∨ (p ∧ r) :=
+  have forward : p ∧ (q ∨ r) → (p ∧ q) ∨ (p ∧ r) := fun h =>
+    have q' := fun hq => Or.inl (And.intro h.left hq)
+    have r' := fun hr => Or.inr (And.intro h.left hr)
+    h.right.elim q' r'
+  have backward : (p ∧ q) ∨ (p ∧ r) → p ∧ (q ∨ r) := fun h =>
+    have d1 := fun h1 => And.intro h1.left (Or.inl h1.right)
+    have d2 := fun h2 => And.intro h2.left (Or.inr h2.right)
+    h.elim d1 d2
+  Iff.intro forward backward
+
+example : p ∨ (q ∧ r) ↔ (p ∨ q) ∧ (p ∨ r) :=
+  have forward : p ∨ (q ∧ r) → (p ∨ q) ∧ (p ∨ r) := fun h =>
+    have d1 := fun h1 => And.intro (Or.inl h1) (Or.inl h1)
+    have d2 := fun h2 => And.intro (Or.inr h2.left) (Or.inr h2.right)
+    h.elim d1 d2
+  have backward : (p ∨ q) ∧ (p ∨ r) → p ∨ (q ∧ r) := fun h =>
+    have if_p : p → p ∨ (q ∧ r) := Or.inl
+    have if_q : q → p ∨ (q ∧ r) := fun hq =>
+      have if_r : r → p ∨ (q ∧ r) := fun hr => Or.inr (And.intro hq hr)
+      h.right.elim if_p if_r
+    h.left.elim if_p if_q
+  Iff.intro forward backward
 
 -- other properties
-example : (p → (q → r)) ↔ (p ∧ q → r) := sorry
-example : ((p ∨ q) → r) ↔ (p → r) ∧ (q → r) := sorry
-example : ¬(p ∨ q) ↔ ¬p ∧ ¬q := sorry
-example : ¬p ∨ ¬q → ¬(p ∧ q) := sorry
+example : (p → (q → r)) ↔ (p ∧ q → r) :=
+  have forward  := fun h : (p → (q → r)) => fun hpq => h hpq.left hpq.right
+  have backward := fun h : (p ∧ q → r)   => fun hp  => (fun hq => h (And.intro hp hq))
+  Iff.intro forward backward
+
+example : ((p ∨ q) → r) ↔ (p → r) ∧ (q → r) :=
+  have forward := fun h : ((p ∨ q) → r) =>
+    have pr := fun hp => h (Or.inl hp)
+    have qr := fun hr => h (Or.inr hr)
+    And.intro pr qr
+  have backward := fun h : (p → r) ∧ (q → r) =>
+    fun hpq => Or.elim hpq h.left h.right
+  Iff.intro forward backward
+
+example : ¬(p ∨ q) ↔ ¬p ∧ ¬q :=
+  have forward  := fun h : ¬(p ∨ q) => sorry
+  have backward := fun h : ¬p ∧ ¬q  => sorry
+  Iff.intro forward backward
+
+example : ¬p ∨ ¬q → ¬(p ∧ q) := fun h => sorry
+
 example : ¬(p ∧ ¬p) := sorry
-example : p ∧ ¬q → ¬(p → q) := sorry
-example : ¬p → (p → q) := sorry
-example : (¬p ∨ q) → (p → q) := sorry
-example : p ∨ False ↔ p := sorry
-example : p ∧ False ↔ False := sorry
-example : (p → q) → (¬q → ¬p) := sorry
+
+example : p ∧ ¬q → ¬(p → q) := fun h => sorry
+
+example : ¬p → (p → q) := fun h => sorry
+
+example : (¬p ∨ q) → (p → q) := fun h => sorry
+
+example : p ∨ False ↔ p :=
+  have forward  := sorry
+  have backward := sorry
+  Iff.intro forward backward
+
+example : p ∧ False ↔ False :=
+  have forward  := sorry
+  have backward := sorry
+  Iff.intro forward backward
+
+example : (p → q) → (¬q → ¬p) := fun h => sorry
 
 -- these require classical reasoning
-example : (p → q ∨ r) → ((p → q) ∨ (p → r)) := sorry
-example : ¬(p ∧ q) → ¬p ∨ ¬q := sorry
-example : ¬(p → q) → p ∧ ¬q := sorry
-example : (p → q) → (¬p ∨ q) := sorry
-example : (¬q → ¬p) → (p → q) := sorry
+example : (p → q ∨ r) → ((p → q) ∨ (p → r)) := fun h => sorry
+
+example : ¬(p ∧ q) → ¬p ∨ ¬q := fun h => sorry
+
+example : ¬(p → q) → p ∧ ¬q := fun h => sorry
+
+example : (p → q) → (¬p ∨ q) := fun h => sorry
+
+example : (¬q → ¬p) → (p → q) := fun h => sorry
+
 example : p ∨ ¬p := sorry
+
 example : (((p → q) → p) → p) := sorry
 
 -- Prove ¬(p ↔ ¬p) without using classical logic.
