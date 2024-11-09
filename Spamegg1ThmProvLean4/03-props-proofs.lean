@@ -168,7 +168,7 @@ example (p q : Prop) : ¬(p ∧ ¬q) → (p → q) :=
   fun h : ¬(p ∧ ¬q) =>
   fun hp : p =>
   show q from
-    Or.elim (em q)
+    Or.elim (em q) -- here is the classical usage
       (fun hq : q => hq)
       (fun hnq : ¬q => absurd (And.intro hp hnq) h)
 
@@ -270,18 +270,34 @@ example : (¬p ∨ q) → (p → q) := fun h : ¬p ∨ q =>
   h.elim if_notp if_q
 
 example : p ∨ False ↔ p := Iff.intro (fun h => h.elim id False.elim) Or.inl
-
 example : p ∧ False ↔ False := Iff.intro And.right False.elim
 
 example : (p → q) → (¬q → ¬p) := fun hpq : p → q =>
   fun notq : ¬q => fun hp : p => absurd (hpq hp) notq
 
 -- these require classical reasoning
-example : (p → q ∨ r) → ((p → q) ∨ (p → r)) := fun h => sorry
+example : (p → q ∨ r) → ((p → q) ∨ (p → r)) := fun h : p → q ∨ r =>
+  have if_p := fun hp : p =>
+    have if_q := fun hq => Or.inl (fun _ : p => hq)
+    have if_r := fun hr => Or.inr (fun _ : p => hr)
+    Or.elim (h hp) if_q if_r
+  have if_notp := fun notp : ¬p => Or.inl (fun h : p => absurd h notp)
+  Or.elim (em p) if_p if_notp
 
-example : ¬(p ∧ q) → ¬p ∨ ¬q := fun h => sorry
+-- de Morgan
+example : ¬(p ∧ q) → ¬p ∨ ¬q := fun h : ¬(p ∧ q) =>
+  have if_p := fun hp : p =>
+    have if_q := fun hq : q => absurd (And.intro hp hq) h
+    Or.elim (em q) if_q Or.inr
+  Or.elim (em p) if_p Or.inl
 
-example : ¬(p → q) → p ∧ ¬q := fun h => sorry
+example : ¬(p → q) → p ∧ ¬q := fun h : ¬(p → q) =>
+  have if_p := fun hp : p =>
+    have if_q    := fun hq :  q => absurd (fun _ => hq) h
+    have if_notq := fun nq : ¬q => And.intro hp nq
+    Or.elim (em q) if_q if_notq
+  have if_notp := fun np : ¬p => absurd (fun hp : p => absurd hp np) h
+  Or.elim (em p) if_p if_notp
 
 example : (p → q) → (¬p ∨ q) := fun h => sorry
 
