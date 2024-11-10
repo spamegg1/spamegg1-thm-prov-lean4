@@ -299,13 +299,20 @@ example : ¬(p → q) → p ∧ ¬q := fun h : ¬(p → q) =>
   have if_notp := fun np : ¬p => absurd (fun hp : p => absurd hp np) h
   Or.elim (em p) if_p if_notp
 
-example : (p → q) → (¬p ∨ q) := fun h => sorry
+example : (p → q) → (¬p ∨ q) := fun h : p → q =>
+  Or.elim (em p) (fun hp => Or.inr (h hp)) Or.inl
 
-example : (¬q → ¬p) → (p → q) := fun h => sorry
+example : (¬q → ¬p) → (p → q) := fun h : ¬q → ¬p => fun hp : p =>
+  have if_notq := fun nq : ¬q => absurd hp (h nq)
+  Or.elim (em q) id if_notq
 
-example : p ∨ ¬p := sorry
+example : p ∨ ¬p := em p
 
-example : (((p → q) → p) → p) := sorry
+example : (((p → q) → p) → p) := fun h : ((p → q) → p) =>
+  have if_notp := fun np : ¬p => h (fun hp : p => absurd hp np)
+  Or.elim (em p) id if_notp
 
 -- Prove ¬(p ↔ ¬p) without using classical logic.
-example : ¬(p ↔ ¬p) := sorry
+example : ¬(p ↔ ¬p) := fun h : p ↔ ¬p =>
+  have not_p : ¬p := fun hp : p => absurd hp (h.mp hp)
+  absurd (h.mpr not_p) not_p
