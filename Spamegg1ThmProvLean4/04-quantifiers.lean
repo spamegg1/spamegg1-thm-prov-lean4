@@ -342,7 +342,6 @@ example (a : α) : (∃ x, p x → r) ↔ (∀ x, p x) → r :=
                     have hex : ∃ x, p x → r := ⟨x, (fun hp => absurd hp hnp)⟩
                     show False from hnex hex)
               show False from hnap hap)))
-
 end ClassicalExists
 
 namespace MoreProofLang
@@ -379,16 +378,52 @@ open Classical
 
 variable (α : Type) (p q : α → Prop)
 variable (r : Prop)
+
+example : (∀ x, p x ∧ q x) ↔ (∀ x, p x) ∧ (∀ x, q x) :=
+  have forward := fun h : ∀ x, p x ∧ q x =>
+    have hp := fun x => (h x).left
+    have hq := fun x => (h x).right
+    And.intro hp hq
+  have backward := fun h : (∀ x, p x) ∧ (∀ x, q x) =>
+    let ⟨hp, hq⟩ := h
+    fun x => And.intro (hp x) (hq x)
+  Iff.intro forward backward
+
+example : (∀ x, p x → q x) → (∀ x, p x) → (∀ x, q x) :=
+  fun hpq => fun hp => fun x => (hpq x) (hp x)
+
+example : (∀ x, p x) ∨ (∀ x, q x) → ∀ x, p x ∨ q x := fun h =>
+  have left  := fun hp : (∀ x, p x) => fun x => Or.inl (hp x)
+  have right := fun hq : (∀ x, q x) => fun x => Or.inr (hq x)
+  Or.elim h left right
+
+example : α → ((∀ x : α, r) ↔ r) := fun a =>
+  have forward  := fun h : (∀ x : α, r) => h a
+  have backward := fun h : r => fun x => h
+  Iff.intro forward backward
+
+example : (∀ x, p x ∨ r) ↔ (∀ x, p x) ∨ r := -- needs classical
+  have forward := fun h : ∀ x, p x ∨ r =>
+    have notr : ¬r -> (∀ x, p x) ∨ r := fun nr =>
+      have all_px : ∀ x, p x := fun x =>
+        Or.elim (h x) id (fun hr : r => absurd hr nr)
+      Or.inl all_px
+    Or.elim (em r) Or.inr notr
+  have backward := fun h : (∀ x, p x) ∨ r =>
+    have left  := fun hp : ∀ x, p x => fun x => Or.inl (hp x)
+    have right := fun hr : r => fun x => Or.inr hr
+    Or.elim h left right
+  Iff.intro forward backward
+
+example : (∀ x, r → p x) ↔ (r → ∀ x, p x) :=
+  have forward := fun h : ∀ x, r → p x => sorry
+  have backward := fun h : r → ∀ x, p x => sorry
+  Iff.intro forward backward
+
 variable (men : Type) (barber : men)
 variable (shaves : men → men → Prop)
-
-example : (∀ x, p x ∧ q x) ↔ (∀ x, p x) ∧ (∀ x, q x) := sorry
-example : (∀ x, p x → q x) → (∀ x, p x) → (∀ x, q x) := sorry
-example : (∀ x, p x) ∨ (∀ x, q x) → ∀ x, p x ∨ q x := sorry -- converse not true!
-example : α → ((∀ x : α, r) ↔ r) := sorry
-example : (∀ x, p x ∨ r) ↔ (∀ x, p x) ∨ r := sorry
-example : (∀ x, r → p x) ↔ (r → ∀ x, p x) := sorry
 example (h : ∀ x : men, shaves barber x ↔ ¬ shaves x x) : False := sorry
+
 def even (n : Nat) : Prop := sorry
 def prime (n : Nat) : Prop := sorry
 def infinitely_many_primes : Prop := sorry
