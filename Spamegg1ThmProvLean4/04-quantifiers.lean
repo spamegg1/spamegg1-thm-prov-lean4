@@ -422,26 +422,77 @@ example : (∀ x, r → p x) ↔ (r → ∀ x, p x) :=
 
 variable (men : Type) (barber : men)
 variable (shaves : men → men → Prop)
-example (h : ∀ x : men, shaves barber x ↔ ¬ shaves x x) : False := sorry
+example (h : ∀ x : men, shaves barber x ↔ ¬ shaves x x) : False :=
+  have barber_not_shaves_self : ¬(shaves barber barber) :=
+    fun hsbb : shaves barber barber => absurd hsbb ((h barber).mp hsbb)
+  have barber_shaves_self : shaves barber barber :=
+    (h barber).mpr barber_not_shaves_self
+  absurd barber_shaves_self barber_not_shaves_self
 
-def even (n : Nat) : Prop := sorry
-def prime (n : Nat) : Prop := sorry
-def infinitely_many_primes : Prop := sorry
-def Fermat_prime (n : Nat) : Prop := sorry
-def infinitely_many_Fermat_primes : Prop := sorry
-def goldbach_conjecture : Prop := sorry
-def Goldbach's_weak_conjecture : Prop := sorry
-def Fermat's_last_theorem : Prop := sorry
-example : (∃ x : α, r) → r := sorry
-example (a : α) : r → (∃ x : α, r) := sorry
-example : (∃ x, p x ∧ r) ↔ (∃ x, p x) ∧ r := sorry
-example : (∀ x, p x) ↔ ¬ (∃ x, ¬ p x) := sorry
-example : (∃ x, p x) ↔ ¬ (∀ x, ¬ p x) := sorry
-example : (¬ ∃ x, p x) ↔ (∀ x, ¬ p x) := sorry
-example : (¬ ∀ x, p x) ↔ (∃ x, ¬ p x) := sorry
-example : (∀ x, p x → r) ↔ (∃ x, p x) → r := sorry
-example (a : α) : (∃ x, r → p x) ↔ (r → ∃ x, p x) := sorry
-example : (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) := sorry
-example (a : α) : (∃ x, p x → r) ↔ (∀ x, p x) → r := sorry
+def even (n : Nat) : Prop := n % 2 = 0
+def odd (n : Nat) : Prop := n % 2 = 1
+def prime (n : Nat) : Prop :=
+  2 ≤ n ∧ ∀ m : Nat, (m ≤ n ∧ n % m = 0) → (m = 1 ∨ m = n)
+def infinitely_many_primes : Prop := ∀ n : Nat, ∃ p : Nat, n ≤ p ∧ prime p
+def Fermat_prime (n : Nat) : Prop := ∃ m : Nat, n = 2^(2^m) + 1 ∧ prime n
+def infinitely_many_Fermat_primes : Prop := ∀ n : Nat, ∃ p : Nat, n ≤ p ∧ Fermat_prime p
+def goldbach_conjecture : Prop :=
+  ∀ n : Nat, ((2 < n ∧ even n) → ∃ p q : Nat, (prime p ∧ prime q ∧ n = p + q))
+def Goldbach's_weak_conjecture : Prop := ∀ n : Nat, ((3 < n ∧ odd n) →
+  ∃ p q r : Nat, (prime p ∧ prime q ∧ prime r ∧ n = p + q + r))
+def Fermat's_last_theorem : Prop := ∀ a b c n : Nat, (0 < a ∧ 0 < b ∧ 0 < c ∧ 2 < n
+  → a^n + b^n ≠ c^n)
+
+example : (∃ x : α, r) → r := fun h => let ⟨_, hw⟩ := h; hw
+example (a : α) : r → (∃ x : α, r) := fun h => Exists.intro a h
+
+example : (∃ x, p x ∧ r) ↔ (∃ x, p x) ∧ r :=
+  have forward := fun h : ∃ x, p x ∧ r =>
+    let ⟨witness, ⟨pw, hr⟩⟩ := h
+    And.intro (Exists.intro witness pw) hr
+  have backward := fun h : (∃ x, p x) ∧ r =>
+    let ⟨⟨witness, pw⟩, hr⟩ := h
+    Exists.intro witness (And.intro pw hr)
+  Iff.intro forward backward
+
+example : (∀ x, p x) ↔ ¬ (∃ x, ¬ p x) :=
+  have forward := fun h : ∀ x, p x => sorry
+  have backward := fun h : ¬ (∃ x, ¬ p x) => sorry
+  Iff.intro forward backward
+
+example : (∃ x, p x) ↔ ¬ (∀ x, ¬ p x) :=
+  have forward := fun h : ∃ x, p x => sorry
+  have backward := fun h : ¬ (∀ x, ¬ p x) => sorry
+  Iff.intro forward backward
+
+example : (¬ ∃ x, p x) ↔ (∀ x, ¬ p x) :=
+  have forward := fun h : ¬ ∃ x, p x => sorry
+  have backward := fun h : ∀ x, ¬ p x => sorry
+  Iff.intro forward backward
+
+example : (¬ ∀ x, p x) ↔ (∃ x, ¬ p x) :=
+  have forward := fun h : ¬ (∀ x, p x) => sorry
+  have backward := fun h : ∃ x, ¬ p x => sorry
+  Iff.intro forward backward
+
+example : (∀ x, p x → r) ↔ (∃ x, p x) → r :=
+  have forward := fun h : ∀ x, p x → r => sorry
+  have backward := fun h : (∃ x, p x) → r => sorry
+  Iff.intro forward backward
+
+example (a : α) : (∃ x, r → p x) ↔ (r → ∃ x, p x) :=
+  have forward := fun h : ∃ x, r → p x => sorry
+  have backward := fun h : r → ∃ x, p x => sorry
+  Iff.intro forward backward
+
+example : (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) :=
+  have forward := fun h : ∃ x, p x ∨ q x => sorry
+  have backward := fun h : (∃ x, p x) ∨ (∃ x, q x) => sorry
+  Iff.intro forward backward
+
+example (a : α) : (∃ x, p x → r) ↔ (∀ x, p x) → r :=
+  have forward := fun h : ∃ x, p x → r => sorry
+  have backward := fun h : (∀ x, p x) → r => sorry
+  Iff.intro forward backward
 
 end Exercises
