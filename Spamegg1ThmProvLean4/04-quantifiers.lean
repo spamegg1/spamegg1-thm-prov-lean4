@@ -416,8 +416,8 @@ example : (∀ x, p x ∨ r) ↔ (∀ x, p x) ∨ r := -- needs classical
   Iff.intro forward backward
 
 example : (∀ x, r → p x) ↔ (r → ∀ x, p x) :=
-  have forward := fun h : ∀ x, r → p x => sorry
-  have backward := fun h : r → ∀ x, p x => sorry
+  have forward := fun h : ∀ x, r → p x => fun hr : r => fun x => (h x) hr
+  have backward := fun h : r → ∀ x, p x => fun x => fun hr : r => (h hr) x
   Iff.intro forward backward
 
 variable (men : Type) (barber : men)
@@ -440,8 +440,8 @@ def goldbach_conjecture : Prop :=
   ∀ n : Nat, ((2 < n ∧ even n) → ∃ p q : Nat, (prime p ∧ prime q ∧ n = p + q))
 def Goldbach's_weak_conjecture : Prop := ∀ n : Nat, ((3 < n ∧ odd n) →
   ∃ p q r : Nat, (prime p ∧ prime q ∧ prime r ∧ n = p + q + r))
-def Fermat's_last_theorem : Prop := ∀ a b c n : Nat, (0 < a ∧ 0 < b ∧ 0 < c ∧ 2 < n
-  → a^n + b^n ≠ c^n)
+def Fermat's_last_theorem : Prop := ∀ a b c n : Nat,
+  (0 < a ∧ 0 < b ∧ 0 < c ∧ 2 < n → a^n + b^n ≠ c^n)
 
 example : (∃ x : α, r) → r := fun h => let ⟨_, hw⟩ := h; hw
 example (a : α) : r → (∃ x : α, r) := fun h => Exists.intro a h
@@ -455,44 +455,97 @@ example : (∃ x, p x ∧ r) ↔ (∃ x, p x) ∧ r :=
     Exists.intro witness (And.intro pw hr)
   Iff.intro forward backward
 
+-- backward direction requires classical (LEM)
 example : (∀ x, p x) ↔ ¬ (∃ x, ¬ p x) :=
-  have forward := fun h : ∀ x, p x => sorry
-  have backward := fun h : ¬ (∃ x, ¬ p x) => sorry
+  have forward := fun h : ∀ x, p x => fun g : ∃ x, ¬ p x =>
+    let ⟨witness, hw⟩ := g
+    absurd (h witness) hw
+  have backward := fun h : ¬ (∃ x, ¬ p x) => fun x =>
+    have notpx := fun npx : ¬ p x => absurd (Exists.intro x npx) h
+    Or.elim (em (p x)) id notpx
   Iff.intro forward backward
 
+-- backward direction requires classical (LEM)
 example : (∃ x, p x) ↔ ¬ (∀ x, ¬ p x) :=
-  have forward := fun h : ∃ x, p x => sorry
-  have backward := fun h : ¬ (∀ x, ¬ p x) => sorry
+  have forward := fun h : ∃ x, p x => fun g : ∀ x, ¬ p x =>
+    let ⟨witness, hw⟩ := h
+    absurd hw (g witness)
+  have backward := fun h : ¬ (∀ x, ¬ p x) =>
+    byContradiction (fun nepx : ¬(∃ x, p x) =>
+      have nh : ∀ x, ¬ p x := fun x =>
+        fun px: p x => absurd (Exists.intro x px) nepx
+      absurd nh h)
   Iff.intro forward backward
 
 example : (¬ ∃ x, p x) ↔ (∀ x, ¬ p x) :=
-  have forward := fun h : ¬ ∃ x, p x => sorry
-  have backward := fun h : ∀ x, ¬ p x => sorry
+  have forward := fun h : ¬ ∃ x, p x => fun x =>
+    fun hpx : p x => absurd (Exists.intro x hpx) h
+  have backward := fun h : ∀ x, ¬ p x => fun g : ∃ x, p x =>
+    let ⟨witness, gw⟩ := g
+    absurd gw (h witness)
   Iff.intro forward backward
 
 example : (¬ ∀ x, p x) ↔ (∃ x, ¬ p x) :=
-  have forward := fun h : ¬ (∀ x, p x) => sorry
-  have backward := fun h : ∃ x, ¬ p x => sorry
+  have forward := fun h : ¬ (∀ x, p x) =>
+    byContradiction (fun g : ¬ (∃ x, ¬ p x) =>
+      have nh : ∀ x, p x := fun x => byContradiction
+        fun npx : ¬ p x => absurd (Exists.intro x npx) g
+      absurd nh h)
+  have backward := fun h : ∃ x, ¬ p x =>
+    let ⟨witness, hw⟩ := h
+    fun g : ∀ x, p x => absurd (g witness) hw
   Iff.intro forward backward
 
 example : (∀ x, p x → r) ↔ (∃ x, p x) → r :=
-  have forward := fun h : ∀ x, p x → r => sorry
-  have backward := fun h : (∃ x, p x) → r => sorry
+  have forward := fun h : ∀ x, p x → r => fun g : ∃ x, p x =>
+    let ⟨witness, gw⟩ := g
+    (h witness) gw
+  have backward := fun h : (∃ x, p x) → r => fun x =>
+    fun hp : p x => h (Exists.intro x hp)
   Iff.intro forward backward
 
 example (a : α) : (∃ x, r → p x) ↔ (r → ∃ x, p x) :=
-  have forward := fun h : ∃ x, r → p x => sorry
-  have backward := fun h : r → ∃ x, p x => sorry
+  have forward := fun h : ∃ x, r → p x => fun hr : r =>
+    let ⟨witness, hw⟩ := h
+    Exists.intro witness (hw hr)
+  have backward := fun h : r → ∃ x, p x =>
+    have ifr := fun hr : r =>
+      let ⟨witness, hw⟩ := h hr
+      Exists.intro witness (fun _ : r => hw)
+    have notr := fun nr : ¬r => Exists.intro a (fun hr : r => absurd hr nr)
+    Or.elim (em r) ifr notr
   Iff.intro forward backward
 
+-- hard one! copy-pasted and edited given solution
 example : (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) :=
-  have forward := fun h : ∃ x, p x ∨ q x => sorry
-  have backward := fun h : (∃ x, p x) ∨ (∃ x, q x) => sorry
+  have forward := (fun ⟨a, (h1 : p a ∨ q a)⟩ =>
+    Or.elim h1
+      (fun hpa : p a => Or.inl ⟨a, hpa⟩)
+      (fun hqa : q a => Or.inr ⟨a, hqa⟩))
+  have backward := (fun h : (∃ x, p x) ∨ (∃ x, q x) =>
+    Or.elim h
+      (fun ⟨a, hpa⟩ => ⟨a, (Or.inl hpa)⟩)
+      (fun ⟨a, hqa⟩ => ⟨a, (Or.inr hqa)⟩))
   Iff.intro forward backward
 
+-- hard one! copy-pasted and edited from given
 example (a : α) : (∃ x, p x → r) ↔ (∀ x, p x) → r :=
-  have forward := fun h : ∃ x, p x → r => sorry
-  have backward := fun h : (∀ x, p x) → r => sorry
+  have forward := (fun ⟨b, (hb : p b → r)⟩ =>
+    fun h2 : ∀ x, p x =>
+    show r from hb (h2 b))
+  have backward := (fun h1 : (∀ x, p x) → r =>
+    show ∃ x, p x → r from
+      byCases
+        (fun hap : ∀ x, p x => ⟨a, λ h' => h1 hap⟩)
+        (fun hnap : ¬ ∀ x, p x =>
+        byContradiction
+          (fun hnex : ¬ ∃ x, p x → r =>
+            have hap : ∀ x, p x :=
+              fun x =>
+              byContradiction
+                (fun hnp : ¬ p x =>
+                  have hex : ∃ x, p x → r := ⟨x, (fun hp => absurd hp hnp)⟩
+                  show False from hnex hex)
+            show False from hnap hap)))
   Iff.intro forward backward
-
 end Exercises
