@@ -640,22 +640,124 @@ example (h : p) : p := by
 macro_rules
   | `(tactic| triv) => `(tactic| rfl)
 
-example (x : α) : x = x := by
-  triv
-
-example (x : α) (h : p) : x = x ∧ p := by
-  apply And.intro <;> triv
+example (x : α) : x = x := by triv
+example (x : α) (h : p) : x = x ∧ p := by apply And.intro <;> triv
 
 -- We now add a (recursive) extension
 macro_rules | `(tactic| triv) => `(tactic| apply And.intro <;> triv)
 
 example (x : α) (h : p) : x = x ∧ p := by triv
 
--- Go back to the exercises in Chapter Propositions and Proofs and
--- Chapter Quantifiers and Equality and redo as many as you can now
--- with tactic proofs, using also rw and simp as appropriate.
-
+-- EXERCISES
 -- Use tactic combinators to obtain a one line proof of the following:
 example (p q r : Prop) (hp : p)
         : (p ∨ q ∨ r) ∧ (q ∨ p ∨ r) ∧ (q ∨ r ∨ p) := by
   admit
+
+-- Go back to the exercises in Chapter Propositions and Proofs and
+-- Chapter Quantifiers and Equality and redo as many as you can now
+-- with tactic proofs, using also rw and simp as appropriate.
+
+-- 3. Propositions and Proofs exercises
+-- commutativity of ∧ and ∨
+example : p ∧ q ↔ q ∧ p := by admit
+
+example : p ∨ q ↔ q ∨ p := by admit
+
+-- associativity of ∧ and ∨
+example : (p ∧ q) ∧ r ↔ p ∧ (q ∧ r) := by admit
+
+example : (p ∨ q) ∨ r ↔ p ∨ (q ∨ r) := by admit
+
+-- distributivity
+example : p ∧ (q ∨ r) ↔ (p ∧ q) ∨ (p ∧ r) := by admit
+
+example : p ∨ (q ∧ r) ↔ (p ∨ q) ∧ (p ∨ r) := by admit
+
+-- other properties
+example : (p → (q → r)) ↔ (p ∧ q → r) := by admit
+
+example : ((p ∨ q) → r) ↔ (p → r) ∧ (q → r) := by admit
+
+-- de Morgan laws
+example : ¬(p ∨ q) ↔ ¬p ∧ ¬q := by admit
+
+example : ¬p ∨ ¬q → ¬(p ∧ q) := by admit
+
+example : ¬(p ∧ ¬p) := fun h => by admit
+
+example : p ∧ ¬q → ¬(p → q) := by admit
+
+example : ¬p → (p → q) := by admit
+
+example : (¬p ∨ q) → (p → q) := by admit
+
+example : p ∨ False ↔ p := by admit
+example : p ∧ False ↔ False := by admit
+
+example : (p → q) → (¬q → ¬p) := by admit
+
+-- these require classical reasoning
+open Classical
+example : (p → q ∨ r) → ((p → q) ∨ (p → r)) := by admit
+
+-- de Morgan
+example : ¬(p ∧ q) → ¬p ∨ ¬q := by admit
+
+example : ¬(p → q) → p ∧ ¬q := by admit
+
+example : (p → q) → (¬p ∨ q) := by admit
+
+example : (¬q → ¬p) → (p → q) := by admit
+
+example : p ∨ ¬p := by admit
+
+example : (((p → q) → p) → p) := by admit
+
+-- Prove ¬(p ↔ ¬p) without using classical logic.
+example : ¬(p ↔ ¬p) := by admit
+
+-- 4. Quantifiers and Equality exercises
+variable (α : Type) (p q : α → Prop)
+variable (r : Prop)
+
+example : (∀ x, p x ∧ q x) ↔ (∀ x, p x) ∧ (∀ x, q x) := by admit
+
+example : (∀ x, p x → q x) → (∀ x, p x) → (∀ x, q x) := by admit
+
+example : (∀ x, p x) ∨ (∀ x, q x) → ∀ x, p x ∨ q x := by admit
+
+example : α → ((∀ x : α, r) ↔ r) := by admit
+
+example : (∀ x, p x ∨ r) ↔ (∀ x, p x) ∨ r := by admit -- needs classical
+
+example : (∀ x, r → p x) ↔ (r → ∀ x, p x) := by admit
+
+variable (men : Type) (barber : men)
+variable (shaves : men → men → Prop)
+example (h : ∀ x : men, shaves barber x ↔ ¬ shaves x x) : False := by admit
+
+example : (∃ x : α, r) → r := by admit
+example (a : α) : r → (∃ x : α, r) := by admit
+
+example : (∃ x, p x ∧ r) ↔ (∃ x, p x) ∧ r := by admit
+
+-- backward direction requires classical (LEM)
+example : (∀ x, p x) ↔ ¬ (∃ x, ¬ p x) := by admit
+
+-- backward direction requires classical (LEM)
+example : (∃ x, p x) ↔ ¬ (∀ x, ¬ p x) := by admit
+
+example : (¬ ∃ x, p x) ↔ (∀ x, ¬ p x) := by admit
+
+example : (¬ ∀ x, p x) ↔ (∃ x, ¬ p x) := by admit
+
+example : (∀ x, p x → r) ↔ (∃ x, p x) → r := by admit
+
+example (a : α) : (∃ x, r → p x) ↔ (r → ∃ x, p x) := by admit
+
+-- hard one! copy-pasted and edited given solution
+example : (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) := by admit
+
+-- hard one! copy-pasted and edited from given
+example (a : α) : (∃ x, p x → r) ↔ (∀ x, p x) → r := by admit
