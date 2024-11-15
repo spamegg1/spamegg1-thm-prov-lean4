@@ -673,22 +673,75 @@ example : p ∧ q ↔ q ∧ p := by
   apply Iff.intro <;> (intro h; constructor; exact h.right; exact h.left)
 
 example : p ∨ q ↔ q ∨ p := by
-  apply Iff.intro <;> intro h <;> cases h <;>
-  first | apply Or.inl; assumption | apply Or.inr; assumption
+  apply Iff.intro <;> intro h <;> cases h <;> simp [*]
+  -- first | apply Or.inl; assumption | apply Or.inr; assumption
 
 -- associativity of ∧ and ∨
 example : (p ∧ q) ∧ r ↔ p ∧ (q ∧ r) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro <;> intro <;> simp [*]
 
 example : (p ∨ q) ∨ r ↔ p ∨ (q ∨ r) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . intro forward
+    cases forward
+    . case inl hpq =>
+      cases hpq
+      . case inl hp => simp [*] -- apply Or.inl; assumption
+      . case inr hq => simp [*] -- apply Or.inr; apply Or.inl; assumption
+    . case inr hr => simp [*] -- (repeat apply Or.inr); assumption
+  . intro backward
+    cases backward
+    . case inl hp  => simp [*] -- (repeat apply Or.inl); assumption
+    . case inr hqr =>
+      cases hqr
+      . case inl hq => simp [*] -- apply Or.inl; apply Or.inr; assumption
+      . case inr hr => simp [*] -- apply Or.inr; assumption
 
 -- distributivity
 example : p ∧ (q ∨ r) ↔ (p ∧ q) ∨ (p ∧ r) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . intro h -- intro is like fun x => e
+    apply Or.elim h.right
+    . intro hq
+      apply Or.inl
+      apply And.intro
+      . exact h.left
+      . exact hq
+    . intro hr
+      apply Or.inr
+      apply And.intro
+      . exact h.left
+      . exact hr
+  . intro g
+    apply Or.elim g
+    . intro hpq
+      apply And.intro
+      . exact hpq.left
+      . apply Or.inl
+        exact hpq.right
+    . intro hpr
+      apply And.intro
+      . exact hpr.left
+      . apply Or.inr
+        exact hpr.right
 
 example : p ∨ (q ∧ r) ↔ (p ∨ q) ∧ (p ∨ r) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . intro h
+    apply And.intro <;>
+    . apply Or.elim h <;>
+      . intro hp; simp [*] -- apply Or.inl; exact hp
+      -- . intro hqr; simp [*] -- apply Or.inr; exact hqr.left
+    -- . apply Or.elim h
+    --   . intro hp;  simp[*] -- apply Or.inl; exact hp
+    --   . intro hqr; simp[*] -- apply Or.inr; exact hqr.right
+  . intro g
+    apply Or.elim g.left
+    . intro hp; simp [*] -- apply Or.inl; exact hp
+    . intro hq
+      apply Or.elim g.right <;>
+      . intro hp; simp [*] -- apply Or.inl; exact hp
+      -- . intro hr; simp [*] -- apply Or.inr; exact And.intro hq hr
 
 -- other properties
 example : (p → (q → r)) ↔ (p ∧ q → r) := by
