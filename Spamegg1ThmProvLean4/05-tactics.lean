@@ -745,14 +745,27 @@ example : p ∨ (q ∧ r) ↔ (p ∨ q) ∧ (p ∨ r) := by
 
 -- other properties
 example : (p → (q → r)) ↔ (p ∧ q → r) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro <;> (intros; simp [*])
+  -- . intro h; intro hpq; exact (h hpq.left) hpq.right
+  -- . intro h; intro hp; intro hq; exact h (And.intro hp hq)
 
 example : ((p ∨ q) → r) ↔ (p → r) ∧ (q → r) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . intro h
+    apply And.intro <;> (intros; simp [*])
+    -- . intro hp; exact h (Or.inl hp)
+    -- . intro hq; exact h (Or.inr hq)
+  . intro h
+    intro hpq
+    apply Or.elim hpq <;> (intros; simp [*])
+    -- . intro hp; exact h.left hp
+    -- . intro hq; exact h.right hq
 
 -- de Morgan laws
 example : ¬(p ∨ q) ↔ ¬p ∧ ¬q := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 example : ¬p ∨ ¬q → ¬(p ∧ q) := by admit
 
@@ -765,10 +778,14 @@ example : ¬p → (p → q) := by admit
 example : (¬p ∨ q) → (p → q) := by admit
 
 example : p ∨ False ↔ p := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 example : p ∧ False ↔ False := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 example : (p → q) → (¬q → ¬p) := by admit
 
@@ -797,7 +814,9 @@ variable (α : Type) (p q : α → Prop)
 variable (r : Prop)
 
 example : (∀ x, p x ∧ q x) ↔ (∀ x, p x) ∧ (∀ x, q x) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 example : (∀ x, p x → q x) → (∀ x, p x) → (∀ x, q x) := by admit
 
@@ -806,10 +825,14 @@ example : (∀ x, p x) ∨ (∀ x, q x) → ∀ x, p x ∨ q x := by admit
 example : α → ((∀ x : α, r) ↔ r) := by admit
 
 example : (∀ x, p x ∨ r) ↔ (∀ x, p x) ∨ r := by -- needs classical
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 example : (∀ x, r → p x) ↔ (r → ∀ x, p x) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 variable (men : Type) (barber : men)
 variable (shaves : men → men → Prop)
@@ -819,32 +842,50 @@ example : (∃ x : α, r) → r := by admit
 example (a : α) : r → (∃ x : α, r) := by admit
 
 example : (∃ x, p x ∧ r) ↔ (∃ x, p x) ∧ r := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 -- backward direction requires classical (LEM)
 example : (∀ x, p x) ↔ ¬ (∃ x, ¬ p x) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 -- backward direction requires classical (LEM)
 example : (∃ x, p x) ↔ ¬ (∀ x, ¬ p x) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 example : (¬ ∃ x, p x) ↔ (∀ x, ¬ p x) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 example : (¬ ∀ x, p x) ↔ (∃ x, ¬ p x) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 example : (∀ x, p x → r) ↔ (∃ x, p x) → r := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 example (a : α) : (∃ x, r → p x) ↔ (r → ∃ x, p x) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 -- hard one! copy-pasted and edited given solution
 example : (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
 
 -- hard one! copy-pasted and edited from given
 example (a : α) : (∃ x, p x → r) ↔ (∀ x, p x) → r := by
-  apply Iff.intro <;> admit
+  apply Iff.intro
+  . admit
+  . admit
