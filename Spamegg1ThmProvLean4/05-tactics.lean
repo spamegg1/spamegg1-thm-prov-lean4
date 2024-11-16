@@ -752,62 +752,146 @@ example : (p → (q → r)) ↔ (p ∧ q → r) := by
 example : ((p ∨ q) → r) ↔ (p → r) ∧ (q → r) := by
   apply Iff.intro
   . intro h
-    apply And.intro <;> (intros; simp [*])
+    apply And.intro <;> (intro; simp [*])
     -- . intro hp; exact h (Or.inl hp)
     -- . intro hq; exact h (Or.inr hq)
   . intro h
     intro hpq
-    apply Or.elim hpq <;> (intros; simp [*])
+    apply Or.elim hpq <;> (intro; simp [*])
     -- . intro hp; exact h.left hp
     -- . intro hq; exact h.right hq
 
 -- de Morgan laws
 example : ¬(p ∨ q) ↔ ¬p ∧ ¬q := by
   apply Iff.intro
-  . admit
-  . admit
+  . intro h
+    apply And.intro
+    . intro hp; exact h (Or.inl hp)
+    . intro hq; exact h (Or.inr hq)
+  . intro h
+    intro hpq
+    apply Or.elim hpq
+    . intro hp; exact h.left hp
+    . intro hq; exact h.right hq
 
-example : ¬p ∨ ¬q → ¬(p ∧ q) := by admit
+example : ¬p ∨ ¬q → ¬(p ∧ q) := by
+  intro h
+  apply Or.elim h <;> (intros; simp [*])
+  -- . intro hnp
+  --   intro hpq
+  --   exact hnp hpq.left
+  -- . intro hnq
+  --   intro hpq
+  --   exact hnq hpq.right
 
-example : ¬(p ∧ ¬p) := fun h => by admit
+example : ¬(p ∧ ¬p) := by simp
+  -- intro hpnp
+  -- exact absurd hpnp.left hpnp.right
 
-example : p ∧ ¬q → ¬(p → q) := by admit
+example : p ∧ ¬q → ¬(p → q) := by simp
+  -- intro hpnq
+  -- intro hpq
+  -- exact absurd (hpq hpnq.left) hpnq.right
 
-example : ¬p → (p → q) := by admit
+example : ¬p → (p → q) := by
+  intro hnp
+  intro hp
+  exact absurd hp hnp
 
-example : (¬p ∨ q) → (p → q) := by admit
+example : (¬p ∨ q) → (p → q) := by
+  intro h
+  intro
+  apply Or.elim h <;> simp [*]
+  -- . intro hnp
+  --   exact absurd hp hnp
+  -- . intro q
+  --   exact q
 
-example : p ∨ False ↔ p := by
-  apply Iff.intro
-  . admit
-  . admit
+example : p ∨ False ↔ p := by simp [*]
+  -- apply Iff.intro
+  -- . intro h
+  --   apply Or.elim h
+  --   . intro hp; assumption
+  --   . intro fl; trivial
+  -- . exact Or.inl
 
-example : p ∧ False ↔ False := by
-  apply Iff.intro
-  . admit
-  . admit
+example : p ∧ False ↔ False := by simp [*]
+  -- apply Iff.intro
+  -- . exact And.right
+  -- . intro f; apply And.intro;
+  --   . trivial
+  --   . trivial
 
-example : (p → q) → (¬q → ¬p) := by admit
+example : (p → q) → (¬q → ¬p) := by
+  intro h
+  intro hnq
+  intro hp
+  exact absurd hp (absurd (h hp) hnq)
 
 -- these require classical reasoning
 open Classical
-example : (p → q ∨ r) → ((p → q) ∨ (p → r)) := by admit
+variable (p q r : Prop)
+
+example : (p → q ∨ r) → ((p → q) ∨ (p → r)) := by
+  intro h
+  apply Or.elim (em p)
+  . intro hp
+    apply Or.elim (h hp)
+    . intro hq; apply Or.inl (fun _ : p => hq)
+    . intro hr; apply Or.inr (fun _ : p => hr)
+  . intro hnp
+    apply Or.inl (fun hp' : p => absurd hp' hnp)
 
 -- de Morgan
-example : ¬(p ∧ q) → ¬p ∨ ¬q := by admit
+example : ¬(p ∧ q) → ¬p ∨ ¬q := by
+  intro h
+  apply Or.elim (em p)
+  . intro hp
+    apply Or.elim (em q)
+    . intro hq; apply absurd (And.intro hp hq) h
+    . intro hnq; apply Or.inr hnq
+  . intro hnp; apply Or.inl hnp
 
-example : ¬(p → q) → p ∧ ¬q := by admit
+example : ¬(p → q) → p ∧ ¬q := by
+  intro h
+  apply Or.elim (em p)
+  . intro hp
+    apply Or.elim (em q)
+    . intro hq; exact absurd (fun _ : p => hq) h
+    . intro hnq; exact And.intro hp hnq
+  . intro hnp
+    exact absurd (fun hp : p => absurd hp hnp) h
 
-example : (p → q) → (¬p ∨ q) := by admit
+example : (p → q) → (¬p ∨ q) := by
+  intro h
+  apply Or.elim (em p)
+  . intro hp; apply Or.inr (h hp)
+  . intro hnp; apply Or.inl hnp
 
-example : (¬q → ¬p) → (p → q) := by admit
+example : (¬q → ¬p) → (p → q) := by
+  intro h
+  intro hp
+  apply Or.elim (em q)
+  . intro hq; exact hq
+  . intro hnq; exact absurd hp (h hnq)
 
-example : p ∨ ¬p := by admit
+example : p ∨ ¬p := by
+  apply Or.elim (em p)
+  . apply Or.inl
+  . apply Or.inr
 
-example : (((p → q) → p) → p) := by admit
+example : (((p → q) → p) → p) := by
+  intro h
+  apply Or.elim (em p)
+  . intro hp; assumption
+  . intro hnp
+    exact absurd (h (fun hp : p => absurd hp hnp)) hnp
 
 -- Prove ¬(p ↔ ¬p) without using classical logic.
-example : ¬(p ↔ ¬p) := by admit
+example : ¬(p ↔ ¬p) := by
+  intro h
+  let notp : ¬p := (fun hp : p => absurd hp (h.mp hp))
+  exact absurd (h.mpr notp) notp
 
 -- 4. Quantifiers and Equality exercises
 variable (α : Type) (p q : α → Prop)
