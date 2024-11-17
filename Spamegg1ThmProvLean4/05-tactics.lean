@@ -456,7 +456,7 @@ example (f : Nat → Nat) (k : Nat) (h₁ : f 0 = 0) (h₂ : k = 0) : f k = 0 :=
   rw [h₁] -- replace f 0 with 0
 
 example (x y : Nat) (p : Nat → Prop) (q : Prop) (h : q → x = y)
-        (h' : p y) (hq : q) : p x := by
+        (_ : p y) (hq : q) : p x := by
   rw [h hq]; assumption
 
 example (f : Nat → Nat) (k : Nat) (h₁ : f 0 = 0) (h₂ : k = 0) : f k = 0 := by
@@ -526,7 +526,7 @@ example (w x y z : Nat) (p : Nat → Prop)
   simp; simp at h; assumption
 
 def f (m n : Nat) : Nat := m + n + m
-example {m n : Nat} (h : n = 1) (h' : 0 = m) : (f m n) = n := by simp [h, ←h', f]
+example {m n : Nat} (h : n = 1) (g : 0 = m) : (f m n) = n := by simp [h, ←g, f]
 
 example (f : Nat → Nat) (k : Nat) (h₁ : f 0 = 0) (h₂ : k = 0) : f k = 0 := by
   simp [h₁, h₂]
@@ -872,7 +872,7 @@ example : (¬q → ¬p) → (p → q) := by
   intro h
   intro hp
   apply Or.elim (em q)
-  . intro hq; exact hq
+  . simp -- intro hq; exact hq
   . intro hnq; exact absurd hp (h hnq)
 
 example : p ∨ ¬p := by
@@ -883,7 +883,7 @@ example : p ∨ ¬p := by
 example : (((p → q) → p) → p) := by
   intro h
   apply Or.elim (em p)
-  . intro hp; assumption
+  . simp -- intro hp; assumption
   . intro hnp
     exact absurd (h (fun hp : p => absurd hp hnp)) hnp
 
@@ -899,68 +899,159 @@ variable (r : Prop)
 
 example : (∀ x, p x ∧ q x) ↔ (∀ x, p x) ∧ (∀ x, q x) := by
   apply Iff.intro
-  . admit
-  . admit
+  . intro h
+    apply And.intro
+    . intro x; exact (h x).left
+    . intro x; exact (h x).right
+  . intro ⟨hp, hq⟩
+    intro x
+    exact And.intro (hp x) (hq x)
 
-example : (∀ x, p x → q x) → (∀ x, p x) → (∀ x, q x) := by admit
+example : (∀ x, p x → q x) → (∀ x, p x) → (∀ x, q x) := by
+  intro h
+  intro hp
+  intro x
+  exact (h x) (hp x)
 
-example : (∀ x, p x) ∨ (∀ x, q x) → ∀ x, p x ∨ q x := by admit
+example : (∀ x, p x) ∨ (∀ x, q x) → ∀ x, p x ∨ q x := by
+  intro h
+  apply Or.elim h
+  . intro hp
+    intro x
+    exact Or.inl (hp x)
+  . intro hq
+    intro x
+    exact Or.inr (hq x)
 
-example : α → ((∀ x : α, r) ↔ r) := by admit
+example : α → ((∀ x : α, r) ↔ r) := by
+  intro h
+  apply Iff.intro
+  . intro hxr; exact hxr h
+  . intro hr; intro x; exact hr
 
 example : (∀ x, p x ∨ r) ↔ (∀ x, p x) ∨ r := by -- needs classical
   apply Iff.intro
-  . admit
-  . admit
+  . intro h
+    apply Or.elim (em r)
+    . apply Or.inr
+    . intro nr
+      apply Or.inl
+      intro x
+      exact Or.elim (h x) id (fun hr : r => absurd hr nr)
+  . intro h
+    apply Or.elim h
+    . intro hp
+      intro x
+      exact Or.inl (hp x)
+    . intro hr
+      intro x
+      exact Or.inr hr
 
 example : (∀ x, r → p x) ↔ (r → ∀ x, p x) := by
   apply Iff.intro
-  . admit
-  . admit
+  . intro h
+    intro hr
+    intro x
+    exact (h x) hr
+  . intro h
+    intro x
+    intro hr
+    exact (h hr) x
 
-variable (men : Type) (barber : men)
-variable (shaves : men → men → Prop)
-example (h : ∀ x : men, shaves barber x ↔ ¬ shaves x x) : False := by admit
+section BarberParadox
+  variable (men : Type) (barber : men)
+  variable (shaves : men → men → Prop)
+  example (h : ∀ x : men, shaves barber x ↔ ¬ shaves x x) : False := by
+    let not_self : ¬(shaves barber barber) :=
+      fun hsbb : shaves barber barber => absurd hsbb ((h barber).mp hsbb)
+    let self : shaves barber barber := (h barber).mpr not_self
+    exact absurd self not_self
+end BarberParadox
 
-example : (∃ x : α, r) → r := by admit
-example (a : α) : r → (∃ x : α, r) := by admit
+example : (∃ x : α, r) → r := by intro ⟨_, hw⟩; exact hw
+
+example (a : α) : r → (∃ x : α, r) := by
+  intro h; exact Exists.intro a h
 
 example : (∃ x, p x ∧ r) ↔ (∃ x, p x) ∧ r := by
   apply Iff.intro
-  . admit
-  . admit
+  . intro ⟨witness, hpxr⟩
+    exact And.intro (Exists.intro witness hpxr.left) hpxr.right
+  . intro ⟨⟨witness, hpx⟩, hr⟩
+    exact Exists.intro witness (And.intro hpx hr)
 
 -- backward direction requires classical (LEM)
 example : (∀ x, p x) ↔ ¬ (∃ x, ¬ p x) := by
   apply Iff.intro
-  . admit
-  . admit
+  . intro h
+    intro ⟨falsewitness, hnpx⟩
+    exact absurd (h falsewitness) hnpx
+  . intro h
+    intro x
+    apply Or.elim (em (p x))
+    . exact id
+    . intro npx
+      exact absurd (Exists.intro x npx) h
 
 -- backward direction requires classical (LEM)
 example : (∃ x, p x) ↔ ¬ (∀ x, ¬ p x) := by
   apply Iff.intro
-  . admit
-  . admit
+  . intro ⟨witness, hp⟩
+    intro hnp
+    exact absurd hp (hnp witness)
+  . intro h
+    apply Or.elim (em (∃ x, p x))
+    . simp
+    . intro hnp
+      have nh : ∀ x, ¬ p x := fun x =>
+        fun px: p x => absurd (Exists.intro x px) hnp
+      exact absurd nh h
 
 example : (¬ ∃ x, p x) ↔ (∀ x, ¬ p x) := by
   apply Iff.intro
-  . admit
-  . admit
+  . intro h
+    intro x
+    intro hpx
+    exact absurd (Exists.intro x hpx) h
+  . intro h
+    intro ⟨witness, hp⟩
+    exact absurd hp (h witness)
 
 example : (¬ ∀ x, p x) ↔ (∃ x, ¬ p x) := by
   apply Iff.intro
-  . admit
-  . admit
+  . intro h
+    apply Or.elim (em (∃ x, ¬ p x))
+    . simp
+    . intro hnenpx
+      have nh : ∀ x, p x := fun x => byContradiction
+        fun npx : ¬ p x => absurd (Exists.intro x npx) hnenpx
+      exact absurd nh h
+  . intro ⟨witness, hnp⟩
+    intro hp
+    exact absurd (hp witness) hnp
 
 example : (∀ x, p x → r) ↔ (∃ x, p x) → r := by
   apply Iff.intro
-  . admit
-  . admit
+  . intro h
+    intro ⟨witness, hpx⟩
+    exact (h witness) hpx
+  . intro h
+    intro x
+    intro hpx
+    exact h (Exists.intro x hpx)
 
 example (a : α) : (∃ x, r → p x) ↔ (r → ∃ x, p x) := by
   apply Iff.intro
-  . admit
-  . admit
+  . intro ⟨witness, hrpx⟩
+    intro hr
+    exact (Exists.intro witness (hrpx hr))
+  . intro h
+    apply Or.elim (em r)
+    . intro hr
+      let ⟨witness, hpx⟩ := h hr
+      exact Exists.intro witness (fun _ : r => hpx)
+    . intro nr
+      exact Exists.intro a (fun hr : r => absurd hr nr)
 
 -- hard one! copy-pasted and edited given solution
 example : (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) := by
