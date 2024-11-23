@@ -636,45 +636,112 @@ namespace Exercises
 namespace HiddenNat
 
 def add : Nat → Nat → Nat
-| m, zero   => m
-| m, succ n => succ (add m n)
+| m, 0     => m
+| m, n + 1 => (add m n) + 1
 
 def mul : Nat → Nat → Nat
-| _, zero   => zero
-| m, succ n => add (mul m n) m
+| _, 0     => 0
+| m, n + 1 => add (mul m n) m
 
 def exp : Nat → Nat → Nat
-| _, zero   => succ zero
+| _, 0      => 1
 | m, succ n => mul (exp m n) m
 
-theorem add_zero : ∀ n : Nat, add n zero = n
+theorem add_zero : ∀ n : Nat, add n 0 = n
   | _   => rfl
 
-theorem zero_add : ∀ n, add zero n = n
-  | zero   => rfl
-  | succ n => by rw [add, Nat.add_one_inj, zero_add]
+-- this is written in direct tactic style
+theorem add_one_inj {a b : Nat} : a + 1 = b + 1 ↔ a = b :=
+  by apply Iff.intro <;> simp
+
+-- these are written with universal quantifiers, in equational style
+theorem zero_add : ∀ n, add 0 n = n
+  | 0     => rfl
+  | n + 1 => by rw [add, add_one_inj, zero_add]
 
 theorem add_succ : ∀ m n : Nat, add m (succ n) = succ (add m n)
-  | _, _   => rfl
+  | _, _ => rfl
 
 theorem succ_add : ∀ m n : Nat, add (succ m) n = succ (add m n)
-  | _, _   => sorry
+  | m, 0     => rfl
+  | m, n + 1 => by rw [add, succ_add, add_one_inj]; rfl
 
-theorem add_assoc (a b c : Nat) : add a (add b c) = add (add a b) c := sorry
-theorem add_comm (m n : Nat) : add m n = add n m := sorry
+theorem add_assoc : ∀ a b c : Nat, add a (add b c) = add (add a b) c
+  | _, _, 0     => rfl
+  | a, b, c + 1 => by rw [add, add, add, add_one_inj, add_assoc]
 
+-- this is written in direct induction tactic style
+theorem add_comm (m n : Nat) : add m n = add n m := by
+  induction n with
+  | zero      => rw [add, zero_add]
+  | succ n ih => rw [add, succ_add, ih]
+
+-- this is needed in succ_mul
+theorem add_add_comm (a b c : Nat) : add (add a b) c = add (add a c) b := by
+  induction c with
+  | zero      => rfl
+  | succ c ih => rw [add, add, ih, succ_add]
+
+-- And similarly, I keep changing style back and forth below.
 theorem mul_zero (m : Nat): mul m zero = zero := rfl
 
 theorem zero_mul: ∀ m : Nat, mul zero m = zero
-  | zero   => rfl
-  | succ n => sorry
+  | 0     => rfl
+  | m + 1 => by rw [mul, add, zero_mul]
 
-theorem mul_one (m : Nat): mul m (succ zero) = m := sorry
-theorem one_mul (m : Nat): mul (succ zero) m = m := sorry
-theorem mul_succ (m n : Nat) : mul m (succ n) = add (mul m n) m := sorry
-theorem succ_mul (m n : Nat) : mul (succ m) n = add (mul m n) n := sorry
-theorem mul_assoc (a b c : Nat) : mul a (mul b c) = mul (mul a b) c := sorry
-theorem mul_comm (m n : Nat) : mul m n = mul n m := sorry
+theorem mul_one (m : Nat): mul m 1 = m := by rw [mul, mul_zero, zero_add]
+theorem one_mul : ∀ m : Nat, mul 1 m = m
+  | 0     => rfl
+  | m + 1 => by rw [mul, add, add_one_inj, add_zero, one_mul]
+
+theorem mul_succ (m n : Nat) : mul m (succ n) = add (mul m n) m := rfl
+theorem succ_mul (m n : Nat) : mul (succ m) n = add (mul m n) n := by
+  induction n with
+  | zero      => simp; rfl
+  | succ n ih => rw [mul, mul, ih, add, add, add_one_inj, add_add_comm]
+
+theorem mul_add (a b c : Nat) : mul a (add b c) = add (mul a b) (mul a c) := by
+  induction c with
+  | zero      => rw [mul_zero, add_zero, add_zero]
+  | succ c ih => rw [add, mul, mul, ih, add_assoc]
+
+theorem mul_assoc (a b c : Nat) : mul a (mul b c) = mul (mul a b) c := by
+  induction c with
+  | zero      => rfl
+  | succ c ih => rw [mul, mul_add, ih, mul]
+
+theorem mul_comm (m n : Nat) : mul m n = mul n m := by
+  induction n with
+  | zero      => rw [mul_zero, zero_mul]
+  | succ n ih => rw [mul, succ_mul, ih]
+
+theorem exp_zero : ∀ n : Nat, exp n 0 = 1
+  | 0     => rfl
+  | n + 1 => rfl
+
+theorem zero_exp : ∀ n : Nat, exp 0 (n + 1) = 0
+  | _ => rfl
+
+theorem exp_one (n : Nat) : exp n 1 = n := by
+  induction n with
+  | zero   => rfl
+  | succ n => rw [exp, exp_zero, one_mul]
+
+theorem one_exp : ∀ n : Nat, exp 1 n = 1
+  | 0     => rfl
+  | n + 1 => by rw [exp, one_exp, mul_one]
+
+theorem exp_succ : ∀ m n : Nat, exp m (n+1) = mul (exp m n) m
+  | 0, _     => rfl
+  | m + 1, n => by rw [exp]
+
+theorem exp_add : ∀ a b c : Nat, exp a (b+c) = mul (exp a b) (exp a c)
+  | 0, _, _     => sorry
+  | a + 1, b, c => sorry
+
+theorem exp_mul : ∀ a b c : Nat, exp a (b*c) = exp (exp a b) c
+  | 0, _, _     => sorry
+  | a + 1, b, c => sorry
 
 end HiddenNat
 
