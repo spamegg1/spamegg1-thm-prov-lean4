@@ -633,10 +633,107 @@ namespace Exercises
 -- Open a namespace Hidden to avoid naming conflicts, and use the equation compiler
 -- to define addition, multiplication, and exponentiation on the natural numbers.
 -- Then use the equation compiler to derive some of their basic properties.
+namespace HiddenNat
+
+def add : Nat → Nat → Nat
+| m, zero   => m
+| m, succ n => succ (add m n)
+
+def mul : Nat → Nat → Nat
+| _, zero   => zero
+| m, succ n => add (mul m n) m
+
+def exp : Nat → Nat → Nat
+| _, zero   => succ zero
+| m, succ n => mul (exp m n) m
+
+theorem add_zero : ∀ n : Nat, add n zero = n
+  | _   => rfl
+
+theorem zero_add : ∀ n, add zero n = n
+  | zero   => rfl
+  | succ n => by rw [add, Nat.add_one_inj, zero_add]
+
+theorem add_succ : ∀ m n : Nat, add m (succ n) = succ (add m n)
+  | _, _   => rfl
+
+theorem succ_add : ∀ m n : Nat, add (succ m) n = succ (add m n)
+  | _, _   => sorry
+
+theorem add_assoc (a b c : Nat) : add a (add b c) = add (add a b) c := sorry
+theorem add_comm (m n : Nat) : add m n = add n m := sorry
+
+theorem mul_zero (m : Nat): mul m zero = zero := rfl
+
+theorem zero_mul: ∀ m : Nat, mul zero m = zero
+  | zero   => rfl
+  | succ n => sorry
+
+theorem mul_one (m : Nat): mul m (succ zero) = m := sorry
+theorem one_mul (m : Nat): mul (succ zero) m = m := sorry
+theorem mul_succ (m n : Nat) : mul m (succ n) = add (mul m n) m := sorry
+theorem succ_mul (m n : Nat) : mul (succ m) n = add (mul m n) n := sorry
+theorem mul_assoc (a b c : Nat) : mul a (mul b c) = mul (mul a b) c := sorry
+theorem mul_comm (m n : Nat) : mul m n = mul n m := sorry
+
+end HiddenNat
 
 -- Similarly, use the equation compiler to define some basic operations on lists
 -- (like the reverse function) and prove theorems about lists by induction
 -- (such as the fact that reverse (reverse xs) = xs for any list xs).
+namespace HiddenList
+
+def len : List α → Nat
+  | []      => 0
+  | _ :: xs => 1 + len xs
+
+def rev : List α → List α
+  | []      => []
+  | x :: xs => rev xs ++ [x]
+
+-- written in different style, without "induction xs with"
+theorem len_append : ∀ xs ys : List α, len (xs ++ ys) = len xs + len ys
+  | [], _       => by simp; rfl
+  | x :: xs, ys =>
+    calc  len (x :: xs ++ ys)
+      _ = len (x :: (xs ++ ys))  := by rfl
+      _ = 1 + len (xs ++ ys)     := by rfl
+      _ = 1 + (len xs + len ys)  := by rw [len_append] -- inductive hypothesis!
+      _ = (1 + len xs) + len ys  := by rw [Nat.add_assoc]
+      _ = len (x :: xs) + len ys := by rfl
+
+theorem len_rev (xs : List α) : len (rev xs) = len xs := by
+  induction xs with
+  | nil          => rfl
+  | cons x xs ih =>
+    calc  len (rev (x :: xs))
+      _ = len (rev xs ++ [x])    := by rfl
+      _ = len (rev xs) + len [x] := by rw [len_append]
+      _ = len (rev xs) + 1       := by rfl
+      _ = 1 + len (rev xs)       := by rw [Nat.add_comm]
+      _ = 1 + len xs             := by rw [ih]
+      _ = len (x :: xs)          := by rfl
+
+theorem rev_append (y : α) (xs : List α) : rev (xs ++ [y]) = rev [y] ++ rev xs := by
+  induction xs with
+  | nil          => rfl
+  | cons x xs ih =>
+    calc rev (x :: xs ++ [y])
+      _ = rev (x :: (xs ++ [y]))   := by rfl
+      _ = rev (xs ++ [y]) ++ [x]   := by rfl
+      _ = rev [y] ++ rev xs ++ [x] := by rw [ih]
+      _ = rev [y] ++ rev (x :: xs) := by rfl
+
+theorem rev_rev (xs : List α) : rev (rev xs) = xs := by
+  induction xs with
+  | nil          => rfl
+  | cons x xs ih =>
+    calc  rev (rev (x :: xs))
+      _ = rev (rev xs ++ [x])     := by rfl
+      _ = rev [x] ++ rev (rev xs) := by rw [rev_append]
+      _ = rev [x] ++ xs           := by rw [ih]
+      _ = x :: xs                 := by rfl
+end HiddenList
 
 -- Define your own function to carry out course-of-value recursion on the natural numbers.
 -- Similarly, see if you can figure out how to define WellFounded.fix on your own.
