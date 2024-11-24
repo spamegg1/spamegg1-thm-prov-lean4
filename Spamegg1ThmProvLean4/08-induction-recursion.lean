@@ -736,13 +736,23 @@ theorem exp_succ : ∀ m n : Nat, exp m (n+1) = mul (exp m n) m
   | m + 1, n => by rw [exp]
 
 theorem exp_add : ∀ a b c : Nat, exp a (b+c) = mul (exp a b) (exp a c)
-  | 0, _, _     => sorry
-  | a + 1, b, c => sorry
+  | a, b, 0     => by simp [exp_zero, mul_one]
+  | a, b, c + 1 =>
+    calc  exp a (b + (c + 1))
+      _ = exp a ((b + c) + 1)             := by rw [Nat.add_assoc]
+      _ = mul (exp a (b + c)) a           := by rw [exp]
+      _ = mul (mul (exp a b) (exp a c)) a := by rw [exp_add] -- ih
+      _ = mul (exp a b) (mul (exp a c) a) := by rw [mul_assoc]
+      _ = mul (exp a b) (exp a (c + 1))   := by rw [exp]
 
 theorem exp_mul : ∀ a b c : Nat, exp a (b*c) = exp (exp a b) c
-  | 0, _, _     => sorry
-  | a + 1, b, c => sorry
-
+  | a, b, 0     => by simp [mul_zero, exp_zero]
+  | a, b, c + 1 =>
+    calc  exp a (b * (c + 1))
+      _ = exp a (b * c + b)               := by rw [Nat.mul_add, Nat.mul_one]
+      _ = mul (exp a (b * c)) (exp a b)   := by rw [exp_add]
+      _ = mul (exp (exp a b) c) (exp a b) := by rw [exp_mul] -- ih
+-- I think this much is enough! :)
 end HiddenNat
 
 -- Similarly, use the equation compiler to define some basic operations on lists
@@ -802,12 +812,15 @@ theorem rev_rev (xs : List α) : rev (rev xs) = xs := by
       _ = x :: xs                 := by rfl
 end HiddenList
 
--- Define your own function to carry out course-of-value recursion on the natural numbers.
+-- Define your own function to carry out
+-- course-of-value recursion on the natural numbers.
 -- Similarly, see if you can figure out how to define WellFounded.fix on your own.
+-- NOT SURE HOW TO DO THIS!
 
 -- Following the examples in Section Dependent Pattern Matching,
 -- define a function that will append two vectors.
 -- This is tricky; you will have to define an auxiliary function.
+-- NOT SURE HOW TO DO THIS!
 
 -- Consider the following type of arithmetic expressions.
 -- The idea is that var n is a variable, vₙ, and
@@ -822,11 +835,13 @@ deriving Repr
 open Expr
 def sampleExpr : Expr := plus (times (var 0) (const 7)) (times (const 2) (var 1))
 
+-- Here sampleExpr represents (v₀ * 7) + (2 * v₁).
+-- Write a function that evaluates such an expression, evaluating each var n to v n.
 def eval (v : Nat → Nat) : Expr → Nat
-  | const n     => sorry
+  | const n     => n -- sorry
   | var n       => v n
-  | plus e₁ e₂  => sorry
-  | times e₁ e₂ => sorry
+  | plus  e₁ e₂ => (eval v e₁) + (eval v e₂)-- sorry
+  | times e₁ e₂ => (eval v e₁) * (eval v e₂)-- sorry
 
 def sampleVal : Nat → Nat
   | 0 => 5
@@ -834,20 +849,48 @@ def sampleVal : Nat → Nat
   | _ => 0
 
 -- Try it out. You should get 47 here.
--- #eval eval sampleVal sampleExpr
+#eval eval sampleVal sampleExpr -- 47
 
+-- Implement "constant fusion," a procedure that simplifies subterms like 5 + 7 to 12.
 def simpConst : Expr → Expr
-  | plus (const n₁) (const n₂)  => const (n₁ + n₂)
+  | plus  (const n₁) (const n₂) => const (n₁ + n₂)
   | times (const n₁) (const n₂) => const (n₁ * n₂)
   | e                           => e
 
-def fuse : Expr → Expr := sorry
+#eval simpConst (plus (const 3) (const 4)) -- const 7
 
+-- Using the auxiliary function simpConst, define a function "fuse":
+-- to simplify a plus or a times, first simplify the arguments recursively,
+-- and then apply simpConst to try to simplify the result.
+def fuse : Expr → Expr
+  | plus  e₁ e₂ => simpConst (plus  (fuse e₁) (fuse e₂))
+  | times e₁ e₂ => simpConst (times (fuse e₁) (fuse e₂))
+  | e           => e
+
+-- The last two theorems show that the definitions preserve the value.
 theorem simpConst_eq (v : Nat → Nat)
-  : ∀ e : Expr, eval v (simpConst e) = eval v e :=
-  sorry
+  : ∀ e : Expr, eval v (simpConst e) = eval v e
+  | const n                       => rfl
+  | var n                         => rfl
+  | plus  (const _)   (const _)   => by rw [simpConst]; repeat rw [eval]
+  | plus  (const _)   (var _)
+  | plus  (const _)   (plus _ _)
+  | plus  (const _)   (times _ _)
+  | plus  (var _)     _
+  | plus  (plus _ _)  _
+  | plus  (times _ _) _           => rfl
+  | times (const _)   (const _)   => by rw [simpConst]; repeat rw [eval]
+  | times (const _)   (var _)
+  | times (const _)   (plus _ _)
+  | times (const _)   (times _ _)
+  | times (var _)     _
+  | times (plus _ _)  _
+  | times (times _ _) _           => rfl
 
 theorem fuse_eq (v : Nat → Nat)
-  : ∀ e : Expr, eval v (fuse e) = eval v e :=
-  sorry
+  : ∀ e : Expr, eval v (fuse e) = eval v e
+  | const n     => rfl
+  | var n       => rfl
+  | plus  e₁ e₂
+  | times e₁ e₂ => by rw [fuse, simpConst_eq, eval, fuse_eq, fuse_eq]; rfl
 end Exercises
